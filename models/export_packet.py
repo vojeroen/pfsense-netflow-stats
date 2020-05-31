@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, ForeignKey, String, Integer
+from sqlalchemy import Column, BigInteger, ForeignKey, String, Integer, Boolean, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -47,6 +47,11 @@ class Flow(Base):
     export_packet_id = Column(UUID, ForeignKey("export_packet.id"))
     id = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False,)
 
+    # https://www.iana.org/assignments/ipfix/ipfix.xhtml
+    # unsigned8, unsigned16 -> Integer
+    # unsigned32 -> BigInteger
+    # unsigned64 -> Numeric
+
     protocolIdentifier = Column(Integer, unique=False, nullable=True)
     vlanId = Column(Integer, unique=False, nullable=True)
     postVlanId = Column(Integer, unique=False, nullable=True)
@@ -70,17 +75,19 @@ class Flow(Base):
     destinationIPv6Address = Column(String, unique=False, nullable=True)
     destinationTransportPort = Column(Integer, unique=False, nullable=True)
 
-    octetDeltaCount = Column(Integer, unique=False, nullable=True)
-    packetDeltaCount = Column(Integer, unique=False, nullable=True)
+    octetDeltaCount = Column(Numeric, unique=False, nullable=True)
+    packetDeltaCount = Column(Numeric, unique=False, nullable=True)
 
     icmpTypeCodeIPv4 = Column(Integer, unique=False, nullable=True)
     icmpTypeCodeIPv6 = Column(Integer, unique=False, nullable=True)
 
     tcpControlBits = Column(Integer, unique=False, nullable=True)
-    samplingPacketSpace = Column(Integer, unique=False, nullable=True)
-    samplingPacketInterval = Column(Integer, unique=False, nullable=True)
+    samplingPacketSpace = Column(BigInteger, unique=False, nullable=True)
+    samplingPacketInterval = Column(BigInteger, unique=False, nullable=True)
     selectorAlgorithm = Column(Integer, unique=False, nullable=True)
     systemInitTimeMilliseconds = Column(BigInteger, unique=False, nullable=True)
     meteringProcessId = Column(BigInteger, unique=False, nullable=True)
 
     export_packet = relationship("ExportPacket", back_populates="flows")
+
+    processed = Column(Boolean, unique=False, nullable=False, default=False)

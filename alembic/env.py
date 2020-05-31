@@ -9,6 +9,7 @@ from alembic import context
 # access to the values within the .ini file in use.
 import models
 import models.export_packet
+import models.summary
 
 config = context.config
 
