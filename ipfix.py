@@ -38,4 +38,8 @@ for ts, client, export in get_export_packets(HOST, PORT):
             continue
         session.add(flow)
 
-    session.commit()
+    try:
+        session.commit()
+    except Exception as e:
+        logging.error("Commit failed: " + str(e))
+        session.rollback()
