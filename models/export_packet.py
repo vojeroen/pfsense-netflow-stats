@@ -1,93 +1,38 @@
-from sqlalchemy import Column, BigInteger, ForeignKey, String, Integer, Boolean, Numeric
+from sqlalchemy import Column, BigInteger, String, Integer, Numeric
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
 
 from models import Base
 
 
-class ExportPacket(Base):
-    __tablename__ = "export_packet"
+class ParsedExportPacket(Base):
+    __tablename__ = "parsed_export_packet"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False,)
-    timestamp = Column(BigInteger, unique=False, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False)
 
-    client = relationship("Client", uselist=False, back_populates="export_packet")
-    header = relationship("Header", uselist=False, back_populates="export_packet")
-    flows = relationship("Flow", back_populates="export_packet")
+    unix_updated_ms = Column(BigInteger, unique=False, nullable=False)
 
+    unix_start_ms = Column(BigInteger, unique=False, nullable=False)
+    unix_end_ms = Column(BigInteger, unique=False, nullable=False)
 
-class Client(Base):
-    __tablename__ = "client"
+    year = Column(Integer, unique=False, nullable=False)
+    month = Column(Integer, unique=False, nullable=False)
+    day = Column(Integer, unique=False, nullable=False)
+    hour = Column(Integer, unique=False, nullable=False)
+    minute = Column(Integer, unique=False, nullable=False)
+    offset = Column(Integer, unique=False, nullable=False)
 
-    export_packet_id = Column(UUID, ForeignKey("export_packet.id"))
-    id = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False,)
-    host = Column(String, unique=False, nullable=False)
+    ip_version = Column(Integer, unique=False, nullable=False)
+    protocol = Column(String, unique=False, nullable=False)
+
+    local_address = Column(String, unique=False, nullable=False)
+    local_name = Column(String, unique=False, nullable=True)
+
+    remote_address = Column(String, unique=False, nullable=False)
+    remote_name = Column(String, unique=False, nullable=True)
+
     port = Column(Integer, unique=False, nullable=False)
+    direction = Column(String, unique=False, nullable=False)
 
-    export_packet = relationship("ExportPacket", back_populates="client")
-
-
-class Header(Base):
-    __tablename__ = "header"
-
-    export_packet_id = Column(UUID, ForeignKey("export_packet.id"))
-    id = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False,)
-    version = Column(Integer, unique=False, nullable=False)
-    length = Column(Integer, unique=False, nullable=False)
-    export_uptime = Column(Integer, unique=False, nullable=False)
-    sequence_number = Column(Integer, unique=False, nullable=False)
-    obervation_domain_id = Column(Integer, unique=False, nullable=False)
-
-    export_packet = relationship("ExportPacket", back_populates="header")
-
-
-class Flow(Base):
-    __tablename__ = "flow"
-
-    export_packet_id = Column(UUID, ForeignKey("export_packet.id"))
-    id = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False,)
-
-    # https://www.iana.org/assignments/ipfix/ipfix.xhtml
-    # unsigned8, unsigned16 -> Integer
-    # unsigned32 -> BigInteger
-    # unsigned64 -> Numeric
-
-    protocolIdentifier = Column(Integer, unique=False, nullable=True)
-    vlanId = Column(Integer, unique=False, nullable=True)
-    postVlanId = Column(Integer, unique=False, nullable=True)
-    ingressInterface = Column(Integer, unique=False, nullable=True)
-    egressInterface = Column(Integer, unique=False, nullable=True)
-
-    flowStartMilliseconds = Column(BigInteger, unique=False, nullable=True)
-    flowEndMilliseconds = Column(BigInteger, unique=False, nullable=True)
-
-    ipVersion = Column(Integer, unique=False, nullable=True)
-    ipClassOfService = Column(Integer, unique=False, nullable=True)
-
-    sourceMacAddress = Column(String, unique=False, nullable=True)
-    sourceIPv4Address = Column(String, unique=False, nullable=True)
-    sourceIPv6Address = Column(String, unique=False, nullable=True)
-    sourceTransportPort = Column(Integer, unique=False, nullable=True)
-
-    destinationMacAddress = Column(String, unique=False, nullable=True)
-    postDestinationMacAddress = Column(String, unique=False, nullable=True)
-    destinationIPv4Address = Column(String, unique=False, nullable=True)
-    destinationIPv6Address = Column(String, unique=False, nullable=True)
-    destinationTransportPort = Column(Integer, unique=False, nullable=True)
-
-    octetDeltaCount = Column(Numeric, unique=False, nullable=True)
-    packetDeltaCount = Column(Numeric, unique=False, nullable=True)
-
-    icmpTypeCodeIPv4 = Column(Integer, unique=False, nullable=True)
-    icmpTypeCodeIPv6 = Column(Integer, unique=False, nullable=True)
-
-    tcpControlBits = Column(Integer, unique=False, nullable=True)
-    samplingPacketSpace = Column(BigInteger, unique=False, nullable=True)
-    samplingPacketInterval = Column(BigInteger, unique=False, nullable=True)
-    selectorAlgorithm = Column(Integer, unique=False, nullable=True)
-    systemInitTimeMilliseconds = Column(BigInteger, unique=False, nullable=True)
-    meteringProcessId = Column(BigInteger, unique=False, nullable=True)
-
-    export_packet = relationship("ExportPacket", back_populates="flows")
-
-    processed = Column(Boolean, unique=False, nullable=False, default=False)
+    connections = Column(Numeric, unique=False, nullable=False)
+    packets = Column(Numeric, unique=False, nullable=False)
+    octets = Column(Numeric, unique=False, nullable=False)
