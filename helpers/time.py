@@ -25,3 +25,27 @@ def to_minute_end(ts):
     return pytz.utc.localize(
         datetime.datetime(ts.year, ts.month, ts.day, ts.hour, ts.minute, 0)
     )
+
+
+def to_hour_start(ts):
+    ts = ts.astimezone(pytz.utc)
+    return pytz.utc.localize(
+        datetime.datetime(ts.year, ts.month, ts.day, ts.hour, 0, 0)
+    )
+
+
+def to_hour_end(ts):
+    ts = ts.astimezone(pytz.utc) + datetime.timedelta(seconds=3600)
+    return pytz.utc.localize(
+        datetime.datetime(ts.year, ts.month, ts.day, ts.hour, 0, 0)
+    )
+
+
+def to_day_start(ts):
+    ts = ts.astimezone(pytz.utc)
+    return pytz.utc.localize(datetime.datetime(ts.year, ts.month, ts.day, 0, 0, 0))
+
+
+def to_day_end(ts):
+    ts = ts.astimezone(pytz.utc) + datetime.timedelta(days=1)
+    return pytz.utc.localize(datetime.datetime(ts.year, ts.month, ts.day, 0, 0, 0))
