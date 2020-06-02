@@ -21,7 +21,7 @@ python parse.py
 python visual.py
 ```
 
-On a regular basis:
+On a regular basis (e.g. every minute):
 ```shell script
 python summary.py
 ```
