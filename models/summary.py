@@ -1,15 +1,20 @@
-import uuid
-
 from sqlalchemy import Column, String, Integer, Numeric, BigInteger
 from sqlalchemy.dialects.postgresql import UUID
 
 from models import Base
 
 
+class SummaryUpdateTime(Base):
+    __tablename__ = "summary_update_time"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False)
+    last_unix_updated_ms = Column(BigInteger, unique=False, nullable=True)
+
+
 class SummaryMinute(Base):
     __tablename__ = "summary_minute"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False,)
+    id = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False)
 
     unix_start_ms = Column(BigInteger, unique=False, nullable=False)
     unix_end_ms = Column(BigInteger, unique=False, nullable=False)
