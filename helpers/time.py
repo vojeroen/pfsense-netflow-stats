@@ -49,3 +49,7 @@ def to_day_start(ts):
 def to_day_end(ts):
     ts = ts.astimezone(pytz.utc) + datetime.timedelta(days=1)
     return pytz.utc.localize(datetime.datetime(ts.year, ts.month, ts.day, 0, 0, 0))
+
+
+def now_ms():
+    return ts_to_ms(pytz.utc.localize(datetime.datetime.utcnow()))

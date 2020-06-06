@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import shutil
-import socket
 import time
 import uuid
 from json.decoder import JSONDecodeError
@@ -16,6 +15,7 @@ import pandas
 import pytz
 from cachetools import cached, TTLCache
 
+from helpers.dns import get_domain_name
 from helpers.time import ms_to_ts, ts_to_ms, to_minute_start, to_minute_end
 from models import Session
 from models.export_packet import ParsedExportPacket
@@ -108,16 +108,6 @@ def return_local_and_remote_address(row):
             "keeping source as local and destination as remote: " + str(row)
         )
         return row["sourceAddress"], row["destinationAddress"], "unknown"
-
-
-@cached(cache=TTLCache(maxsize=1024 * 1024, ttl=900))
-def get_domain_name(ip):
-    logging.debug("Retrieving domain name for " + ip)
-    try:
-        name, alias, addresslist = socket.gethostbyaddr(ip)
-    except (socket.gaierror, socket.herror):
-        name = ip
-    return name
 
 
 @cached(cache=TTLCache(maxsize=1024 * 1024, ttl=900))

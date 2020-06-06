@@ -7,17 +7,43 @@ import pandas
 import pytz
 from sqlalchemy import func
 
+from helpers.dns import get_domain_name
 from helpers.time import (
     ts_to_ms,
     to_hour_start,
     ms_to_ts,
     to_hour_end,
+    now_ms,
 )
 from models import Session
 from models.export_packet import ParsedExportPacket
 from models.summary import SummaryUpdateTime, SummaryMinute, SummaryHour
 
 LOCKFILE = Path("/tmp/ipfix-summary.lock")
+
+
+def correct_ips():
+    session = Session()
+    now = now_ms()
+    parsed_export_packets = (
+        session.query(ParsedExportPacket)
+        .filter(ParsedExportPacket.local_address == ParsedExportPacket.local_name)
+        .filter(ParsedExportPacket.ip_version == 4)
+        .filter(
+            ParsedExportPacket.unix_start_ms
+            > ts_to_ms(
+                pytz.utc.localize(datetime.datetime.utcnow())
+                - datetime.timedelta(hours=24)
+            )
+        )
+        .all()
+    )
+    for packet in parsed_export_packets:
+        new_name = get_domain_name(packet.local_address)
+        if new_name != packet.local_name:
+            packet.local_name = new_name
+            packet.unix_updated_ms = now
+    session.commit()
 
 
 def main():
@@ -284,6 +310,7 @@ if __name__ == "__main__":
 
     Path.touch(LOCKFILE)
     try:
+        correct_ips()
         main()
     except BaseException:
         Path.unlink(LOCKFILE)
