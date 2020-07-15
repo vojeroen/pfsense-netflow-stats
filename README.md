@@ -1,8 +1,11 @@
 # pfSense NetFlow stats
 
+## Limitations
+* Does not work very well with IPv6
+
 ## Installation
 
-A PostgreSQL database is required. The default config uses database `ipfix`, username `ipfix` and password `ipfix` on `localhost`. This can be changed in `alembic.ini` and `models/__init__.py`. The database `ipfix` needs to have the extension `uuid-ossp` enabled:
+A PostgreSQL database is required (e.g. `docker run --rm -p 5432:5432 postgres:11`). The default config uses database `ipfix`, username `ipfix` and password `ipfix` on `localhost`. This can be changed in `alembic.ini` and `models/__init__.py`. The database `ipfix` needs to have the extension `uuid-ossp` enabled:
 ```postgresql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ``` 

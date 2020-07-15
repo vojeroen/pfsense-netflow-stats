@@ -8,7 +8,6 @@ import shutil
 import time
 import uuid
 from json.decoder import JSONDecodeError
-from pathlib import Path
 from pprint import pprint
 
 import pandas
@@ -33,11 +32,13 @@ PROTOCOL_MAP = {
     17: "UDP",
 }
 
-LOCAL_ADDRESS = [192, 168, 1]
+LOCAL_ADDRESS = [192, 168, 42]
+VPN_ADDRESS = [192, 168, 43]
 
-LOCKFILE = Path("/tmp/ipfix-cron.lock")
+PROCESS_ID = uuid.uuid4().hex
 
 CACHE_DIR = "cache/"
+PROCESSING_DIR = os.path.join(CACHE_DIR, "processing-" + PROCESS_ID)
 PARSED_DIR = "parsed/"
 
 IPFIX_TO_DB_MAP = {
@@ -84,11 +85,15 @@ def return_local_and_remote_address(row):
             int(i) for i in row["destinationAddress"].split(".")
         ]
         source_is_local = (
-            split_source_address[: len(LOCAL_ADDRESS)] == LOCAL_ADDRESS
-        ) or (split_source_address == [0, 0, 0, 0])
+            (split_source_address[: len(LOCAL_ADDRESS)] == LOCAL_ADDRESS)
+            or (split_source_address[: len(VPN_ADDRESS)] == VPN_ADDRESS)
+            or (split_source_address == [0, 0, 0, 0])
+        )
         destination_is_local = (
-            split_destination_address[: len(LOCAL_ADDRESS)] == LOCAL_ADDRESS
-        ) or (split_destination_address == [0, 0, 0, 0])
+            (split_destination_address[: len(LOCAL_ADDRESS)] == LOCAL_ADDRESS)
+            or (split_destination_address[: len(VPN_ADDRESS)] == VPN_ADDRESS)
+            or (split_destination_address == [0, 0, 0, 0])
+        )
         if source_is_local and destination_is_local:
             return row["sourceAddress"], row["destinationAddress"], "internal"
         elif source_is_local:
@@ -337,17 +342,34 @@ def main():
     session = Session()
 
     while True:
-        files = os.listdir(CACHE_DIR)
+        files = [
+            f
+            for f in os.listdir(CACHE_DIR)
+            if os.path.isfile(os.path.join(CACHE_DIR, f))
+        ]
+        files = files[0:32]
 
         if len(files) > 0:
             now = datetime.datetime.utcnow()
             flows = pandas.DataFrame()
 
-            for f in files:
+            for f in files[:]:
                 src_dir = os.path.join(CACHE_DIR)
+                prc_dir = os.path.join(PROCESSING_DIR)
+
+                os.makedirs(prc_dir, exist_ok=True)
+                try:
+                    shutil.move(
+                        os.path.join(src_dir, f), os.path.join(prc_dir, f),
+                    )
+                except FileNotFoundError:
+                    files.remove(f)
+
+            for f in files:
+                prc_dir = os.path.join(PROCESSING_DIR)
                 retry = 1
                 while retry <= 10:
-                    with gzip.open(os.path.join(src_dir, f), "rb") as ifile:
+                    with gzip.open(os.path.join(prc_dir, f), "rb") as ifile:
                         try:
                             message = json.loads(ifile.read().decode())
                         except JSONDecodeError:
@@ -367,7 +389,7 @@ def main():
                 )
 
             for f in files:
-                src_dir = os.path.join(CACHE_DIR)
+                prc_dir = os.path.join(PROCESSING_DIR)
                 dst_dir = os.path.join(
                     PARSED_DIR,
                     str(now.year).zfill(4),
@@ -378,7 +400,7 @@ def main():
 
                 os.makedirs(dst_dir, exist_ok=True)
                 shutil.move(
-                    os.path.join(src_dir, f), os.path.join(dst_dir, f),
+                    os.path.join(prc_dir, f), os.path.join(dst_dir, f),
                 )
 
             logging.info("Removed files from cache")
@@ -387,15 +409,22 @@ def main():
 
 
 if __name__ == "__main__":
-    if Path.exists(LOCKFILE):
-        logging.error("Lockfile {} found, exiting...".format(LOCKFILE))
-        exit(0)
-
-    Path.touch(LOCKFILE)
     try:
         main()
     except BaseException:
-        Path.unlink(LOCKFILE)
+        try:
+            src_dir_ = os.path.join(CACHE_DIR)
+            prc_dir_ = os.path.join(PROCESSING_DIR)
+            processing_files = os.listdir(prc_dir_)
+            for pf in processing_files:
+                shutil.move(
+                    os.path.join(prc_dir_, pf), os.path.join(src_dir_, pf),
+                )
+        except BaseException:
+            logging.error("Could not clean processing directory")
         raise
-    else:
-        Path.unlink(LOCKFILE)
+    finally:
+        try:
+            os.rmdir(PROCESSING_DIR)
+        except OSError:
+            pass
